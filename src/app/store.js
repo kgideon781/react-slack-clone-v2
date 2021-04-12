@@ -1,8 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import counterReducer from '../features/counter/counterSlice';
+import appReducer from '../features/appSlice';
+import firestoreReducer from '../features/firestoreSlice'
 
 export default configureStore({
   reducer: {
-    counter: counterReducer,
+    app: appReducer,
+    badges: firestoreReducer,
   },
 });
