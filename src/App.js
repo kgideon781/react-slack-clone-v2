@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import styled from "styled-components"
 
 import './App.css';
@@ -6,35 +6,71 @@ import {
     BrowserRouter as Router,
     Switch,
     Route,
-    Link
 } from "react-router-dom";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Chat from "./components/Chat";
 import {useAuthState} from "react-firebase-hooks/auth";
-import {auth} from "./app/firebase";
+import {auth, db} from "./app/firebase";
 import Login from "./components/Login";
 import Spinner from "react-spinkit";
 import TestArea from "./components/TestArea";
-import ChatEngine from "./components/ChatEngine";
-import Button from "reactstrap/es/Button";
-import {askForPermissioToReceiveNotifications} from "./components/MyMessage";
-import {firestoreBadge} from "./components/SidebarOption";
+
 import {useSelector} from "react-redux";
-import {selectRoomId} from "./features/appSlice";
+
 import {setBadge} from "./features/firestoreSlice";
 import TestArena from "./components/TestArena";
+import {selectRoomId} from "./features/appSlice";
+import {useCollection} from "react-firebase-hooks/firestore";
+import {onLog} from "firebase";
+
 
 
 
 function App() {
     const [user, loading] = useAuthState(auth)
     const [userID] = useAuthState(auth);
+    const hideBadge = useSelector(setBadge)
+    const readMessages = hideBadge && db.collection("rooms").doc(hideBadge).collection("messages");
+    const readsRef = hideBadge &&
+        db
+            .collection("rooms")
+            .doc(hideBadge)
+            .collection("messages")
 
-    const [hideBadge, setHideBadge] = useState(true)
+    const [roomMessages] = useCollection(
+        hideBadge &&
+        db
+            .collection("rooms")
+            .doc(hideBadge)
+            .collection("messages")
+            .orderBy("timestamp", "desc")
+            .limit(1)
+    );
 
 
-    //firestoreBadge(userID, setHideBadge, "2ATXydVpGG7nsudrYDyX")
+    if (hideBadge){
+        roomMessages?.docs.map((roomMsg) => {
+            readsRef.doc(roomMsg.id)
+                .collection("reads")
+                .doc(userID.uid)
+                .get().then((user) => {
+                    if (user.exists){
+
+                    }else{
+                        readMessages
+                            .doc(roomMsg.id)
+                            .collection("reads")
+                            .doc(userID.uid)
+                            .set({
+                                read: true
+                            })
+                            .then(() => console.log("Success"));
+                    }
+            })
+        })
+    }
+
 
     if (loading){
         return (
@@ -58,6 +94,7 @@ function App() {
             {!user ? (
                 <Login/>
             ):(
+
                 <>
 
 
@@ -73,8 +110,12 @@ function App() {
                         <Route path="/">
                             <Header/>
                             <AppBody>
+
                                 <Sidebar/>
-                                <Chat/>
+
+                                <Chat
+
+                                />
                             </AppBody>
 
 

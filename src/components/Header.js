@@ -4,11 +4,15 @@ import {Avatar} from "@material-ui/core";
 import AccessTimeIcon from '@material-ui/icons/AccessTime';
 import SearchIcon from '@material-ui/icons/Search';
 import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
+import Cancel from '@material-ui/icons/Cancel';
 import {useAuthState} from "react-firebase-hooks/auth";
 import {auth, provider} from "../app/firebase";
+import {enterRoom} from "../features/appSlice";
+import {useDispatch} from "react-redux";
 
 function Header(props) {
     const [user] = useAuthState(auth);
+    const dispatch = useDispatch();
     return <HeaderContainer>
         {/*Header Left*/}
         <HeaderLeft>
@@ -29,6 +33,7 @@ function Header(props) {
 
         <HeaderRight>
             <HelpOutlineIcon/>
+            <Cancel />
         </HeaderRight>
 
     </HeaderContainer>

@@ -7,8 +7,10 @@ import {useAuthState} from "react-firebase-hooks/auth";
 
 function ChatInput({channelName, channelId, chatRef}) {
     const [input, setInput] = useState('');
+
     const [user] = useAuthState(auth);
     const allMessagesRef = db.collection('rooms').doc(channelId).collection('messages').orderBy('timestamp', 'asc');
+
 
 
     const sendMessage = e => {
@@ -25,7 +27,7 @@ function ChatInput({channelName, channelId, chatRef}) {
 
                 console.log('The document id be '+lastVisible?.id)
 
-                if (lastVisible?.data().user_id === user.uid) {
+                console.log(lastVisible)
 
                     db.collection('rooms')
                         .doc(channelId).collection('messages')
@@ -39,29 +41,14 @@ function ChatInput({channelName, channelId, chatRef}) {
 
 
 
-                        }).then((rs) =>{
-                            console.log(rs.id)
-                        db.collection('rooms').doc(channelId).collection('messages').doc(rs.id).collection('reads')
-                            .doc(user.uid).set({
-                            read: true
+                        })
+                        .then((response) => {
+                            db.collection('rooms')
+                                .doc(channelId).collection('messages').doc(response.id).collection("reads").doc(user.uid).set({
+                                read: true
+                            });
                         })
 
-
-
-                    });
-                }else{
-                    db.collection('rooms')
-                        .doc(channelId).collection('messages')
-                        .add({
-                            user_id: user.uid,
-                            message: input,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                            user: user.displayName,
-                            userImage: user.photoURL,
-                            likesCount: 0,
-
-                        });
-                }
             });
 
 

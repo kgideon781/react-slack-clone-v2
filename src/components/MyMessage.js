@@ -1,9 +1,7 @@
+// eslint-disable-next-line no-unused-vars
 import React from 'react';
 
 import firebase from 'firebase';
-import {auth, firebaseApp} from "../app/firebase";
-import {useAuthState} from "react-firebase-hooks/auth";
-
 
 export const initializeFirebase = () => {
     firebase.initializeApp({

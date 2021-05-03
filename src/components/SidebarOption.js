@@ -9,26 +9,6 @@ import {useCollection} from "react-firebase-hooks/firestore";
 
 
 
-
-/*export function firestoreBadge(userID, setHideBadge, id) {
-    db.collection('rooms').doc(id).collection('messages')
-        .orderBy('timestamp', 'desc')
-        .limit(1)
-        .get()
-        .then((msg) => {
-            msg.docs.map(looped =>{
-
-                    if (looped.data()?.user_id !== userID.uid){
-                        looped.data()?.read === true ? setHideBadge(true) : setHideBadge(false)
-                    }
-
-                }
-
-            )
-
-        })
-}*/
-
 function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
 
     const dispatch = useDispatch();
@@ -39,51 +19,19 @@ function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
     //const [hideBadge, setHideBadge] = useState()
     const readsRef = db.collection('rooms').doc(id).collection('messages')
     const readReciptRef = readsRef.doc().collection('reads').doc(userID.uid)
-    const [isMine, setIsMine] = useState()
-    console.log(userID.uid + userID.displayName)
+    const [isRead, setIsRead] = useState()
+    const readMessages = db.collection("rooms").doc(id).collection("messages");
+    const [roomMessages] = useCollection(
+        id &&
+        db
+            .collection("rooms")
+            .doc(id)
+            .collection("messages")
+            .orderBy("timestamp", "desc")
+            .limit(1)
+    );
 
-
-
-    /*useEffect(() => {
-        channels?.docs.map((rooms) => {
-            console.log(rooms.id)
-            const dbMs = db.collection('rooms').doc(rooms.id)
-                .collection('messages')
-
-            dbMs.orderBy('timestamp', 'asc')
-
-                .limit(1)
-
-                .get()
-                .then((s) => {
-
-                    s.docs.map((s1) => {
-                        //console.log(s1)
-                        if (s1.data()?.user_id !== userID.uid){
-
-                            // console.log(dbMs.doc('reads').collection(userID.uid))
-                            if (dbMs.doc('read').collection(userID.uid)){
-                                setHideBadge(true)
-                                console.log(s1.id+' returned true for '+s1.data())
-                            }
-                            else {
-                                setHideBadge(false)
-                            }
-
-
-                        }else {
-                            setHideBadge(false)
-                        }
-                        // console.log(s1.data())
-
-
-                    })
-                })
-
-            //alert(rooms.id+" for "+rooms.data().name+" was found")
-
-        })
-    }, [])*/
+    //console.log(id)
 
     useEffect(() => {
 
@@ -92,26 +40,27 @@ function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
         readsRef.orderBy('timestamp', 'desc')
 
             .limit(1).onSnapshot((snapshot) => {
-                snapshot.docs.map((snap) => {
-                    setChatMessages(snap.data())
+            snapshot.docs.map((snap) => {
 
-                    snap.get('user_id') === userID.uid ? setIsMine(true) : setIsMine(false)
-                    console.error(snap.id)
+               readMessages.doc(snap.id).collection("reads")
+                   .doc(userID.uid)
+                   .get()
+                   .then((snap) => {
+                       if (snap.exists){
+                           setIsRead(true)
+                       }
+                       else {
+                           setIsRead(false)
+                       }
+                   })
 
-                    readsRef.doc(snap.id).collection('read').doc(userID.uid).onSnapshot((snapshot1 => {
-                        if (snapshot1.exists) {
-                            setReadReports(true)
-                             console.log(`${title} - ${chatMessages.message} READ`)
-                        } else {
-                            console.log(`${title} - ${chatMessages.message} >>>>>UNREAD`)
-                            setReadReports(false)
-                        }
-                    }))
 
-                })
+
+            })
 
         })
-    }, [])
+
+    }, [readsRef])
 
     const addChannel = () => {
 
@@ -121,9 +70,10 @@ function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
                 name: channelName
             })
         }
+
     }
     const selectChannel = () => {
-        let msgArray = []
+
         if (id){
             dispatch(enterRoom({
                 roomId: id
@@ -133,18 +83,17 @@ function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
 
 
         }
-        readsRef.orderBy('timestamp', 'desc')
 
-            .limit(1).onSnapshot((snapshot) => {
-            snapshot.docs.map((snap) => {
-                readsRef.doc(snap.id).collection('read').doc(userID.uid).set({
-                    readReceipt: userID.uid
-                }, {merge: true})
-            })
-
-
-        })
-
+        roomMessages?.docs.map((message) => {
+            readMessages
+                .doc(message.id)
+                .collection("reads")
+                .doc(userID.uid)
+                .set({
+                    read: true
+                })
+                .then(() => setIsRead(true));
+        });
 
 
     }
@@ -159,12 +108,12 @@ function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
 
             >
 
-            {Icon && <Icon fontSize='small' style={{padding: 10}}/>}
+                {Icon && <Icon fontSize='small' style={{padding: 10}}/>}
                 {Icon ? (
                     <h3>{title}</h3>
                 ):(
                     <SidebarOptionChannel>
-                        <span># </span>{title}<span>{readReports ? null : <UnreadBadge><span>1</span></UnreadBadge> }</span>
+                        <span># </span>{title}<span>{isRead ? null : <UnreadBadge><span>1</span></UnreadBadge> }</span>
 
                     </SidebarOptionChannel>
                 )}
@@ -221,6 +170,5 @@ const UnreadBadge = styled.div`
   
   }
 `
-
 
 

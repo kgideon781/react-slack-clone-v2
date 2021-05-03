@@ -1,33 +1,39 @@
-import React, {createContext, useContext, useEffect, useState} from 'react';
-import styled from "styled-components"
+import React, {useEffect, useState} from 'react';
 import {auth, db} from "../app/firebase";
-import {useCollection} from "react-firebase-hooks/firestore";
-import List from "./Test Arena Playground/List";
+import firebase from "firebase";
 import {useAuthState} from "react-firebase-hooks/auth";
+import {useCollection} from "react-firebase-hooks/firestore";
 
-
-function TestArena(){
-    const [roomsRef] = useCollection(db.collection('rooms'));
-    const [userID] = useAuthState(auth);
-    const [hasRead, setHasRead] = useState(false)
-    const [lastMsg, setLastMsg] = useState()
-    let msgs = []
-
-    const [cinemas, setCinemas] = useState([]);
+function TestArena(props) {
+    const [cinemas] = useState([]);
     const [selectedCinema, setSelectedCinema] = useState();
     const [movies, setMovies] = useState([]);
+
     const [error, setError] = useState();
+    const [isMine] = useState();
+    const [userID] = useAuthState(auth)
+    const loggedInUser = userID.uid
+    const [roomsRef] = useCollection(db.collection("rooms"))
 
     const selectCinema = (cinema) => {
+
         setSelectedCinema(cinema);
-        db.collection('rooms').doc(cinema.id).collection('messages').get()
+        db.collection('rooms').doc(cinema.id).collection('messages')
+            .orderBy("timestamp", "desc")
+            .limit(1)
+            .get()
             .then(response => {
                 const fetchedMovies = [];
                 response.forEach(document => {
+                    //console.log(document.reads)
+
+
                     const fetchedMovie = {
+
                         id: document.id,
                         ...document.data()
                     };
+
                     fetchedMovies.push(fetchedMovie);
                 });
                 setMovies(fetchedMovies);
@@ -36,72 +42,57 @@ function TestArena(){
                 setError(error);
             });
     }
+    const saveALike = (movie) => {
+        db.collection('rooms').doc(selectedCinema.id).collection('messages')
+            .doc(selectedCinema.m_id).set({
+            reads: firebase.firestore.FieldValue.arrayUnion({
+                //u_id: loggedInUser
+            })
+        }, {merge: true}).then(rs => console.log("Set"))
+    }
 
     const timestampToString = (timestamp) => {
         return Date(timestamp).toString();
     }
 
     useEffect(() => {
-        db.collection('rooms').get()
-            .then(response => {
-                const fetchedCinemas = [];
-                response.docs.forEach(document => {
-                    const fetchedCinema = {
-                        id: document.id,
-                        ...document.data()
-                    };
-                    fetchedCinemas.push(fetchedCinema);
-                });
-                setCinemas(fetchedCinemas);
+    roomsRef?.docs.map((room) => {
+        db.collection('rooms').doc(room.id).collection('messages')
+            .orderBy("timestamp", "desc")
+            .limit(1)
+            .onSnapshot((doc) => {
+                console.log(doc.data())
             })
-            .catch(error => {
-                setError(error);
-            });
-    }, []);
+    })
 
-
-
+    }, [isMine]);
     return (
         <div>
+
             {error ? (
                 <p>Ops, there is an error :(</p>
             ) : null}
             <ul>
                 {cinemas.map(cinema => (
 
-                    <List key={cinema.id} onClick={() => selectCinema(cinema)} _id={cinema.id} name={cinema.name}>
+                    <li key={cinema.m_id} onClick={() => selectCinema(cinema)}>
+                        <b>{cinema.fetchedCinema +"-"+ cinema.message}</b>{isMine ? "mine" : "not mine"}
+                    </li>
 
-                    </List>
+
                 ))}
             </ul>
             {selectedCinema ? (
-                <ul>
+                <ul >
                     {movies.map(movie => (
-                        <li key={movie.id}>
-                            <b>{movie.id}</b> | {movie.message}}
+                        <li key={movie.id} onClick={() => saveALike(movie)}>
+                            <b>{movie.message}</b> | {movie.user_id} | {timestampToString(movie.release_date)}
                         </li>
                     ))}
                 </ul>
             ) : null}
         </div>
     );
-
 }
-export default TestArena
 
-const TestAreaContainer = styled.div`
-
-  align-items: center;
-
-  
-  >h3{
-  color: ${p=>p.width ? "red":"green"};
-  }
-
-`;
-const TestAreaContainers = styled.div`
-
-  align-items: center;
-  background-color: #3f0f40;
-
-`;
+export default TestArena;

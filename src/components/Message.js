@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styled from 'styled-components'
 import {useAuthState} from "react-firebase-hooks/auth";
 import {auth, db} from "../app/firebase";
@@ -15,13 +15,14 @@ import firebase from "firebase";
 import {Arrow, useLayer} from "react-laag";
 
 import {AnimatePresence, motion} from "framer-motion";
-import {useCollection} from "react-firebase-hooks/firestore";
+import {useCollection, useDocument} from "react-firebase-hooks/firestore";
 import moment from "moment";
 
 
 
 
 function Message({message, timestamp, user, userImage, docId, user_id, firstMessage, showName}) {
+    const isCurrent = useRef(true)
     const [userName] = useAuthState(auth);
     const roomId = useSelector(selectRoomId);
     const [style, setStyle] = useState({display: 'none'});
@@ -48,7 +49,9 @@ function Message({message, timestamp, user, userImage, docId, user_id, firstMess
         .collection('messages')
         .doc(docId)
     const likesRef = db.collection('rooms').doc(roomId).collection('messages').doc(docId).collection('likes')
+    const UserReadsRef = db.collection('users').doc(loggedIn_user).collection('rooms').doc(roomId)
     const messagesRef = db.collection('rooms').doc(roomId).collection('messages').doc(docId)
+    const readsRef = useDocument(db.collection('rooms').doc(roomId).collection('messages').doc(docId))
     const messageRef = db.collection('rooms').doc(roomId).collection('messages')
     //const isFirstMessageByUser = !lastVisisble || las
 
@@ -125,31 +128,39 @@ function Message({message, timestamp, user, userImage, docId, user_id, firstMess
 
     useEffect(() => {
 
-
-        db.collection('rooms')
-            .doc(roomId)
-            .collection('messages')
-            .doc(docId).collection('likes')?.doc(userName.uid).get().then(querySnapshot => {
-            querySnapshot.data()?.like === 'liked' ? setLike(true) : setLike(false)
-        })
-
-
-
         //check the last added message
 
+        if (isCurrent.current){
+            db.collection('rooms')
+                .doc(roomId)
+                .collection('messages')
+                .doc(docId).collection('likes')?.doc(userName.uid).get().then(querySnapshot => {
+                querySnapshot.data()?.like === 'liked' ? setLike(true) : setLike(false)
+            })
+            checkMyMessage();
+            countLikes();
+        }
 
-        checkMyMessage();
-        countLikes();
-
-
-
-
-
+        return () => {
+            isCurrent.current = false;
+        }
 
     }, []);
 
    // checkRelated()
 
+    const markLastMessageRead = () => {
+        messageRef.orderBy("timestamp", "desc").limit(1)
+            .onSnapshot(snapshot => {
+                snapshot.docs.map((response) => {
+                    UserReadsRef.set({
+                        id: response.id,
+                        read:true
+                    })
+
+                })
+            })
+    }
 
 
 
@@ -262,6 +273,7 @@ function Message({message, timestamp, user, userImage, docId, user_id, firstMess
                                             const u_id = userName.uid;
                                             if (!like){
 
+                                                markLastMessageRead()
 
                                                 likesRef.doc(u_id)
                                                     .set({
@@ -269,7 +281,9 @@ function Message({message, timestamp, user, userImage, docId, user_id, firstMess
                                                         like: 'liked',
                                                     })
                                                     .then(() => {
+                                                        console.log("Updated likes")
                                                         dbRef.update({
+
                                                             likesCount: likesCount+1
                                                         })
 
@@ -311,7 +325,7 @@ function Message({message, timestamp, user, userImage, docId, user_id, firstMess
                                     </div>
 
                                 </EmojiBar>
-                                <Arrow {...arrowProps} />
+                                {/*<Arrow {...arrowProps} />*/}
                             </motion.ul>
                         )}
                     </AnimatePresence>

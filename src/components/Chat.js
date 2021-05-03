@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import styled from 'styled-components'
 import StarBorderOutlinedIcon from "@material-ui/icons/StarBorderOutlined"
 import InfoOutlineIcon from "@material-ui/icons/InfoOutlined"
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {selectRoomId} from "../features/appSlice";
 import ChatInput from "./ChatInput";
 import {useCollection, useDocument} from "react-firebase-hooks/firestore";
@@ -11,13 +11,18 @@ import Message from "./Message";
 import {useAuthState} from "react-firebase-hooks/auth";
 import Spinner from "react-spinkit";
 import MyMessage from "./MyMessage";
+import {showBadge} from "../features/firestoreSlice";
+import Button from "@material-ui/core/Button";
+import firebase from "firebase";
+import TextInput from "./Test Environment/TextInput";
 
 
 function Chat(props) {
+    const dispatch = useDispatch();
     const chatRef = useRef(null);
-    const roomId = useSelector(selectRoomId)
+    let roomId = useSelector(selectRoomId)
     const [renderMessage, setRenderMessages] = useState([])
-    const [roomDetails] = useDocument(
+    let [roomDetails] = useDocument(
         roomId && db.collection('rooms').doc(roomId)
     );
     const [roomMessages, loading] = useCollection(
@@ -27,38 +32,30 @@ function Chat(props) {
             .orderBy('timestamp', 'asc')
     );
     const [userID] = useAuthState(auth);
+    const loggedInUser = userID.uid
+    const [currentUser, setCurrentUser] = useState('')
     const messagesRef =  roomId && db.collection('rooms')
         .doc(roomId)
         .collection('messages')
         .orderBy('timestamp', 'asc')
 
-
-         const allMessagesRef = roomId && db.collection('rooms').doc(roomId).collection('messages').orderBy('timestamp', 'asc');
-
-
-
-    //console.log(roomMessages)
-    console.log(roomId)
+    const [toggleRoomDetails, setToggleRoomDetails] = useState(false)
+    //const [currentUser, setCurrentUser] = useState("")
+    const markReadRef = roomId && db.collection("rooms").doc(roomId).collection("messages")
+        .where("reads", "array-contains", loggedInUser)
+    const filterMessagesRef = roomId && db.collection("rooms").doc(roomId).collection("messages")
 
 
 
-    /*messagesRef?.get().then((docus) => {
-        docus.docs.map((doc) => {
-            //console.log(doc.data())
-            renderMessage.push({
-                id:doc.get('user_id'),
-                message: doc.get('message'),
-                user_name: doc.get('user')
-            })
-            setRenderMessages(renderMessage)
-            //console.log(renderMessage)
-        })
-    })*/
+
     let lastSenderId = undefined
 
 
 
     useEffect(() => {
+
+
+
 
         chatRef?.current?.scrollIntoView({
             behavior:'smooth',
@@ -80,11 +77,15 @@ function Chat(props) {
             )
         }
 
+
+
     }, [roomId, loading]);
-    let allMsg = [];
 
+    dispatch(showBadge({
+        hideBadge: roomDetails?.id,
 
-    //console.log(roomId)
+    }))
+
     return (
         <ChatContainer>
             {roomDetails && roomMessages && (
@@ -132,86 +133,9 @@ function Chat(props) {
 
 
                         })}
-{/*
 
 
 
-
-
-
-
-                        {roomMessages?.docs.map((doc, index) => {
-                            const documetID = doc.id;
-
-                            renderMessage.map((message, indice) => {
-                                let showName = !lastSenderId || message.id !== lastSenderId;
-                                lastSenderId = message.id;
-
-                                //console.log(showName)
-                                //console.log("last sender"+lastSenderId)
-                                if (currUser === lastSenderId){
-                                    return (
-                                    <TheirMessages
-                                        key={index}
-                                        showName={showName}
-                                        message={message.message}
-                                        user_name={message.user_name}/>
-                                        )
-                                }else{
-
-
-                                    return (
-
-                                        <Message
-                                            key={documetID}
-                                            showName={showName}
-                                            message={message.message}
-                                            user_name={message.user_name}
-                                            docId={documetID}
-                                            user={message.user}
-                                            userImage={message.userImage}
-                                            timestamp={message.timestamp}
-
-                                        />
-                                    )
-
-
-                            })
-
-
-                            /*const {message, timestamp, user, userImage, user_id} = doc.data();
-
-
-                            if (userID.uid === user_id){
-                                return (
-                                    <Message
-                                        key={doc.id}
-                                        docId={doc.id}
-                                        user={user}
-                                        user_id={user_id}
-                                        userImage={userImage}
-                                        timestamp={timestamp}
-                                        message={message}
-
-
-                                    />
-                                )
-                            }
-
-
-                            return (
-                                <Message
-                                    key={doc.id}
-                                    docId={doc.id}
-                                    user={user}
-                                    userImage={userImage}
-                                    timestamp={timestamp}
-                                    message={message}
-
-                                />
-                            )*/
-
-                        }
                         <ChatBottom ref={chatRef}/>
                     </ChatMessages>
                     <ChatInput
@@ -219,8 +143,6 @@ function Chat(props) {
                         channelName={roomDetails?.data().name}
                         channelId={roomId}
                     />
-
-
                 </>
             )}
 

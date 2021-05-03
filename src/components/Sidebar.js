@@ -16,89 +16,24 @@ import SidebarOption from "./SidebarOption";
 import {useCollection} from "react-firebase-hooks/firestore";
 import {auth, db} from "../app/firebase";
 import {useAuthState} from "react-firebase-hooks/auth";
-import List from "./Test Arena Playground/List";
 
 
-function Sidebar(props) {
-    const [channels, loading, error] = useCollection(db.collection('rooms'));
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [width, setWidth] = useState(window.innerWidth);
+function Sidebar() {
+    const [channels] = useCollection(db.collection('rooms'));
     const [userID] = useAuthState(auth);
     const currentUser = userID.displayName;
-    const [hideBadge, setHideBadge] = useState()
-
-    const [cinemas, setCinemas] = useState([]);
-    const [selectedCinema, setSelectedCinema] = useState();
-    const [movies, setMovies] = useState([]);
-
-
-    /*const updateBadges = () => {
-        channels?.docs.map((rooms) => {
-            console.log(rooms.id)
-            const dbMs = db.collection('rooms').doc(rooms.id)
-                .collection('messages')
-
-            dbMs.orderBy('timestamp', 'desc')
-
-                .limit(1)
-
-                .get()
-                .then((s) => {
-
-                    s.docs.map((s1) => {
-                        //console.log(s1)
-                        if (s1.data()?.user_id !== userID.uid){
-
-                            // console.log(dbMs.doc('reads').collection(userID.uid))
-                            if (dbMs.doc('read').collection(userID.uid)){
-                                setHideBadge(true)
-                                console.log(s1.id+' returned true')
-                            }
-                            else {
-                                setHideBadge(false)
-                                console.log(s1.id+' returned false')
-                            }
-
-
-                        }else {
-                            setHideBadge(false)
-                        }
-                        // console.log(s1.data())
-
-
-                    })
-                })
-
-            //alert(rooms.id+" for "+rooms.data().name+" was found")
-
-        })
-    }*/
 
 
 
     useEffect(() => {
-       //updateBadges()
-        db.collection('rooms').get()
-            .then(response => {
-                const fetchedCinemas = [];
-                response.docs.forEach(document => {
-                    const fetchedCinema = {
-                        id: document.id,
-                        ...document.data()
-                    };
-                    fetchedCinemas.push(fetchedCinema);
-                });
-                setCinemas(fetchedCinemas);
-            })
-            .catch(error => {
-                alert(error);
-            });
+
 
     }, [])
 
 
-
+    //console.log('last message')
+    //console.log(lastMsg)
 
 
 
@@ -119,7 +54,7 @@ function Sidebar(props) {
                     </SidebarInfo>
                     <CreateIcon/>
                 </SidebarHeader>
-                <SidebarOption isSidebarOpen={isSidebarOpen} Icon={InsertCommentIcon} title="Threads"/>
+                <SidebarOption Icon={InsertCommentIcon} title="Threads"/>
                 <SidebarOption Icon={InboxIcon} title="Mentions & reactions"/>
                 <SidebarOption Icon={DraftsIcon} title="Saved items"/>
                 <SidebarOption Icon={BookmarkBorderIcon} title="Channel browser"/>
@@ -136,13 +71,15 @@ function Sidebar(props) {
 
 
                 {channels?.docs.map((doc) => (
+
                     <SidebarOption
                         key={doc.id}
                         id={doc.id}
                         title={doc.data().name}
-
+                        user_id={userID.uid}
 
                     />
+
 
                 ))}
             </SidebarContainer>
