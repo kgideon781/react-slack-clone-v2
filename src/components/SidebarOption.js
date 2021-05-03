@@ -9,26 +9,6 @@ import {useCollection} from "react-firebase-hooks/firestore";
 
 
 
-
-/*export function firestoreBadge(userID, setHideBadge, id) {
-    db.collection('rooms').doc(id).collection('messages')
-        .orderBy('timestamp', 'desc')
-        .limit(1)
-        .get()
-        .then((msg) => {
-            msg.docs.map(looped =>{
-
-                    if (looped.data()?.user_id !== userID.uid){
-                        looped.data()?.read === true ? setHideBadge(true) : setHideBadge(false)
-                    }
-
-                }
-
-            )
-
-        })
-}*/
-
 function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
 
     const dispatch = useDispatch();
@@ -42,48 +22,6 @@ function SidebarOption({Icon, title, addChannelOption, id, hideBadge}) {
     const [isMine, setIsMine] = useState()
     console.log(userID.uid + userID.displayName)
 
-
-
-    /*useEffect(() => {
-        channels?.docs.map((rooms) => {
-            console.log(rooms.id)
-            const dbMs = db.collection('rooms').doc(rooms.id)
-                .collection('messages')
-
-            dbMs.orderBy('timestamp', 'asc')
-
-                .limit(1)
-
-                .get()
-                .then((s) => {
-
-                    s.docs.map((s1) => {
-                        //console.log(s1)
-                        if (s1.data()?.user_id !== userID.uid){
-
-                            // console.log(dbMs.doc('reads').collection(userID.uid))
-                            if (dbMs.doc('read').collection(userID.uid)){
-                                setHideBadge(true)
-                                console.log(s1.id+' returned true for '+s1.data())
-                            }
-                            else {
-                                setHideBadge(false)
-                            }
-
-
-                        }else {
-                            setHideBadge(false)
-                        }
-                        // console.log(s1.data())
-
-
-                    })
-                })
-
-            //alert(rooms.id+" for "+rooms.data().name+" was found")
-
-        })
-    }, [])*/
 
     useEffect(() => {
 
